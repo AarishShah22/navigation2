@@ -20,7 +20,8 @@
 #include "nav2_mppi_controller/motion_models.hpp"
 #include "nav2_mppi_controller/models/state.hpp"
 #include "nav2_mppi_controller/models/control_sequence.hpp"
-
+#include <iostream>
+#include <xtensor/xio.hpp>
 // Tests motion models
 
 class RosLockGuard
@@ -123,6 +124,31 @@ TEST(MotionModelTests, OmniTest)
 
   // Check it cleanly destructs
   model.reset();
+}
+
+TEST(MotionModelTests, OmniBidirectionalAccelDecelTest)
+{
+  // models::ControlSequence control_sequence;
+  models::State state;
+  int batches = 1;
+  int timesteps = 5;
+  // control_sequence.reset(timesteps);  // populates with zeros
+  state.reset(batches, timesteps);  // populates with zeros
+  std::unique_ptr<OmniMotionModel> model =
+    std::make_unique<OmniMotionModel>();
+  models::ControlConstraints control_constraints{10.0f, -10.0f, 5.0f, 1.0f, 2.0f, -1.0f, 1.0f,
+  1.0f};
+  float model_dt = 1;
+  model->initialize(control_constraints, model_dt);
+
+  state.cvx = xt::xtensor<float,2>({{-1,-3,-6,-6,-6}});
+  // state.cvx = -1 * xt::xtensor<float,2>({{10,10,9,8,6,4,3,3,3,3}});
+  xt::view(state.vx, xt::all(), 0) = 0;
+
+  model->predict(state);
+  xt::xtensor<float,2> expected_state_vx({{0,-1,-3,-5,-6}});
+  EXPECT_EQ(state.vx, expected_state_vx);
+  std::cout << state.vx << std::endl;
 }
 
 TEST(MotionModelTests, AckermannTest)
