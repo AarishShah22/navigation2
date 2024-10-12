@@ -20,8 +20,7 @@
 #include "nav2_mppi_controller/motion_models.hpp"
 #include "nav2_mppi_controller/models/state.hpp"
 #include "nav2_mppi_controller/models/control_sequence.hpp"
-#include <iostream>
-#include <xtensor/xio.hpp>
+
 // Tests motion models
 
 class RosLockGuard
