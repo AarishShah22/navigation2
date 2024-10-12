@@ -93,8 +93,9 @@ public:
       float wz_last = state.wz(i, 0);
       for (unsigned int j = 1; j != state.vx.shape(1); j++) {
         float & cvx_curr = state.cvx(i, j - 1);
-        // Accelerating if magnitude of v_cmd is above magnitude of v_curr
-        // and if v_cmd and v_curr have the same sign (i.e. speed is NOT passing through 0.0)
+        // Accelerating if magnitude of cvx_curr is above magnitude of vx_last
+        // and if cvx_curr and vx_last have the same sign (i.e. speed is NOT 
+        // passing through 0.0)
         // Decelerating otherwise
         if (abs(cvx_curr) >= abs(vx_last) && cvx_curr * vx_last >= 0.0) {
           max_delta_vx = model_dt_ * control_constraints_.ax_max;

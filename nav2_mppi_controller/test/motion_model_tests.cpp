@@ -126,29 +126,69 @@ TEST(MotionModelTests, OmniTest)
   model.reset();
 }
 
-TEST(MotionModelTests, OmniBidirectionalAccelDecelTest)
+TEST(MotionModelTests, OmniNegativeToNegativeAccelTest)
 {
-  // models::ControlSequence control_sequence;
+  // Tests that the correct acceleration limit is applied when moving backwards too. 
   models::State state;
   int batches = 1;
-  int timesteps = 5;
-  // control_sequence.reset(timesteps);  // populates with zeros
+  int timesteps = 3;
   state.reset(batches, timesteps);  // populates with zeros
   std::unique_ptr<OmniMotionModel> model =
     std::make_unique<OmniMotionModel>();
-  models::ControlConstraints control_constraints{10.0f, -10.0f, 5.0f, 1.0f, 2.0f, -1.0f, 1.0f,
-  1.0f};
+  models::ControlConstraints control_constraints{10.0f, -10.0f, 5.0f, 1.0f, 
+    2.0f, -1.0f, 1.0f, 1.0f};
   float model_dt = 1;
   model->initialize(control_constraints, model_dt);
 
-  state.cvx = xt::xtensor<float,2>({{-1,-3,-6,-6,-6}});
-  // state.cvx = -1 * xt::xtensor<float,2>({{10,10,9,8,6,4,3,3,3,3}});
+  state.cvx = xt::xtensor<float,2>({{-3,-4,-4}});
   xt::view(state.vx, xt::all(), 0) = 0;
-
   model->predict(state);
-  xt::xtensor<float,2> expected_state_vx({{0,-1,-3,-5,-6}});
+  xt::xtensor<float,2> expected_state_vx({{0,-2,-4}});
   EXPECT_EQ(state.vx, expected_state_vx);
-  std::cout << state.vx << std::endl;
+}
+
+TEST(MotionModelTests, OmniNegativeToNegativeDecelTest)
+{
+  // Tests that the correct deceleration limit is applied when moving backwards too. 
+  models::State state;
+  int batches = 1;
+  int timesteps = 3;
+  state.reset(batches, timesteps);  // populates with zeros
+  std::unique_ptr<OmniMotionModel> model =
+    std::make_unique<OmniMotionModel>();
+  models::ControlConstraints control_constraints{10.0f, -10.0f, 5.0f, 1.0f, 
+    2.0f, -1.0f, 1.0f, 1.0f};
+  float model_dt = 1;
+  model->initialize(control_constraints, model_dt);
+
+  state.cvx = xt::xtensor<float,2>({{-1,0,0}});
+  xt::view(state.vx, xt::all(), 0) = -3;
+  model->predict(state);
+  xt::xtensor<float,2> expected_state_vx({{-3,-2,-1}});
+  EXPECT_EQ(state.vx, expected_state_vx);
+}
+
+TEST(MotionModelTests, OmniPositiveToNegativeDecelAccelTest)
+{
+  // Tests that when you start with positive velocity and end at negative 
+  // velocity, initially, the deceleration limit is considered and after 
+  // crossing zero, acceleration limit is considered.
+  models::State state;
+  int batches = 1;
+  int timesteps = 5;
+  state.reset(batches, timesteps);  // populates with zeros
+  std::unique_ptr<OmniMotionModel> model =
+    std::make_unique<OmniMotionModel>();
+  models::ControlConstraints control_constraints{10.0f, -10.0f, 5.0f, 1.0f, 
+    2.0f, -1.0f, 1.0f, 1.0f};
+  float model_dt = 1;
+  model->initialize(control_constraints, model_dt);
+
+  state.cvx = xt::xtensor<float,2>({{0,0,-2,-4,-4}});
+  xt::view(state.vx, xt::all(), 0) = 2;
+  model->predict(state);
+  xt::xtensor<float,2> expected_state_vx({{2,1,0,-2,-4}});
+  EXPECT_EQ(state.vx, expected_state_vx);
 }
 
 TEST(MotionModelTests, AckermannTest)
